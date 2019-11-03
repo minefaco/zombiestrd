@@ -5,6 +5,9 @@ local node_lava = nil
 
 local zombiestrd = {}
 --zombiestrd.spawn_rate = 0.4		-- less is more
+zombiestrd.score = {}
+
+local storage = minetest.get_mod_storage()
 
 local abs = math.abs
 local pi = math.pi
@@ -20,6 +23,129 @@ local time = os.time
 
 local spawn_rate = 1 - max(min(minetest.settings:get('zombiestrd_spawn_chance') or 0.6,1),0)
 local spawn_reduction = minetest.settings:get('zombiestrd_spawn_reduction') or 0.4
+
+
+
+
+-- load scoreboard
+local function openlist()
+
+	local load = storage:to_table()
+	zombiestrd.score = load.fields
+	
+	for count in pairs(zombiestrd.score) do
+	zombiestrd.score[count] = tonumber(zombiestrd.score[count])
+	end
+    
+end
+
+
+-- save scoreboard
+local function savelist()
+
+	storage:from_table({fields=zombiestrd.score})
+	
+end 
+
+
+function spairs(t, order)
+    -- collect the keys
+    local keys = {}
+    for k in pairs(t) do keys[#keys+1] = k end
+
+    -- if order function given, sort by it by passing the table and keys a, b,
+    -- otherwise just sort the keys 
+    if order then
+        table.sort(keys, function(a,b) return order(t, a, b) end)
+    else
+        table.sort(keys)
+    end
+
+    -- return the iterator function
+    local i = 0
+    return function()
+        i = i + 1
+        if keys[i] then
+            return keys[i], t[keys[i]]
+        end
+    end
+end
+
+
+local function sortscore()
+    local fname = "size[5,6]"
+    local count = 1
+
+      for k,v in spairs(zombiestrd.score, function(t,a,b) return t[b] < t[a] end) do
+	  --minetest.chat_send_all(count.." >>> "..k.." , "..v)
+	  fname = fname.."label[1,"..(count*0.3)..";"..count.." >>> "..k.." , "..v.."]"
+	  count = count + 1
+	  if count > 10 then break end
+      end
+  
+    fname = fname.."button_exit[1.5,5;2,1;quit;Exit]"
+    return fname
+end
+
+
+
+minetest.register_chatcommand("score", {
+	params = "",
+	description = "Shows the best zombie killers",
+	privs = {interact = true},
+	func = function(name)
+
+	    local fname = sortscore()
+	    if fname then
+	      if zombiestrd.score[name] then minetest.chat_send_player(name, core.colorize("#FF6700", ">>> Your score is: "..zombiestrd.score[name])) end
+	      minetest.show_formspec(name, "zombiestrd:the_killers", fname)
+	    end
+
+	end,
+})
+
+
+-- handling highscoreloss if killed by player or zombie
+minetest.register_on_dieplayer(function(player,reason)
+    if not player then return end
+    if not reason.object then return end
+    local obj = reason.object
+    local name = player:get_player_name()
+    
+    
+    if obj:is_player() then
+        minetest.chat_send_player(name," >>> "..obj:get_player_name().." killed you ! You lost 10 points of your highscore <<<")
+        if not zombiestrd.score[name] then
+                zombiestrd.score[name] = 0
+        else
+            zombiestrd.score[name] = zombiestrd.score[name] - 10
+            if zombiestrd.score[name] < 0 then zombiestrd.score[name] = 0 end
+        end
+            
+    else
+        local luaent = obj:get_luaentity()
+			if luaent.name == 'zombiestrd:zombie' then
+				minetest.chat_send_player(name, " >>> A Zombie killed you ! You lost 5 points of your highscore <<<")
+                if not zombiestrd.score[name] then
+                    zombiestrd.score[name] = 0
+                else
+                    zombiestrd.score[name] = zombiestrd.score[name] - 5
+                    if zombiestrd.score[name] < 0 then zombiestrd.score[name] = 0 end
+                end
+			end
+    end
+            
+    end)
+    
+    
+
+
+-- Go and get them :D
+
+openlist()
+
+
+
 
 local function dot(v1,v2)
 	return v1.x*v2.x+v1.y*v2.y+v1.z*v2.z
@@ -145,31 +271,7 @@ local function zombie_brain(self)
 	end
 end
 
-local function shark_brain(self)
-	if mobkit.timer(self,1) then lava_dmg(self,6) end
-	mobkit.vitals(self)
-	
-	if self.hp <= 0 then	
-		mobkit.clear_queue_high(self)
-		mobkit.hq_die(self)
-		return
-	end
-	
-	if mobkit.timer(self,1) then
-		local prty = mobkit.get_queue_priority(self)
-		if prty < 20 then
-			local target = mobkit.get_nearby_player(self)
-			if target and mobkit.is_alive(target) and mobkit.is_in_deep(target) and target:get_attach() == nil then
-				mobkit.clear_queue_high(self)
-				mobkit.hq_aqua_attack(self,20,target,7)
-			end
-		end
-	end
-	if mobkit.is_queue_empty_high(self) then mobkit.hq_aqua_roam(self,10,5) end
-end
--- spawning is too specific to be included in the api, this is an example.
--- a modder will want to refer to specific names according to games/mods they're using 
--- in order for mobs not to spawn on treetops, certain biomes etc.
+
 
 local function spawnstep(dtime)
 
@@ -199,23 +301,8 @@ local function spawnstep(dtime)
 				local wcnt=0
 				local dcnt=0
 				local mobname = 'zombiestrd:zombie'
-				if liquidflag then		-- sharks
-					local spnode = mobkit.nodeatpos({x=pos2.x,y=height+0.01,z=pos2.z})
-					local spnode2 = mobkit.nodeatpos({x=pos2.x,y=height+1.01,z=pos2.z}) -- node above to make sure won't spawn in shallows
-					nodename_water = nodename_water or minetest.registered_aliases.mapgen_water_source
-					if spnode and spnode2 and spnode.name == nodename_water and spnode2.name == nodename_water then
-						for _,obj in ipairs(objs) do
-							if not obj:is_player() then
-								local entity = obj:get_luaentity()
-								if entity and entity.name=='zombiestrd:shark' then return end
-							end
-						end
-					mobname = 'zombiestrd:shark'
-					else
-						return
-					end
-					
-				elseif height >= 0 then		--zombies
+				
+				if height >= 0 then		--zombies
 					for _,obj in ipairs(objs) do				-- count mobs in abrange
 						if not obj:is_player() then
 							local entity = obj:get_luaentity()
@@ -225,7 +312,7 @@ local function spawnstep(dtime)
 						end
 					end
 				end
-				if chance < random() then
+				if chance < random() and not liquidflag then
 					pos2.y = height+1.01
 					objs = minetest.get_objects_inside_radius(pos2,abr*16-2)
 					for _,obj in ipairs(objs) do				-- do not spawn if another player around
@@ -312,6 +399,13 @@ minetest.register_entity("zombiestrd:zombie",{
 						mobkit.make_sound(self,'headhit')
 --						self.object:set_hp(99)
 						self.hp=0
+                        local name = puncher:get_player_name()                     
+                        if zombiestrd.score[name] then 
+                                zombiestrd.score[name] = zombiestrd.score[name] +1
+                        else
+                                zombiestrd.score[name] = 1
+                        end
+                        savelist()
 					else
 						mobkit.make_sound(self,'bodyhit')
 						if random()<=0.3 then alert(pp) end
@@ -333,63 +427,3 @@ minetest.register_entity("zombiestrd:zombie",{
 	end
 
 })
-
-minetest.register_entity("zombiestrd:shark",{
-											-- common props
-	physical = true,
-	stepheight = 0.1,				--EVIL!
-	collide_with_objects = true,
-	collisionbox = {-0.5, -0.3, -0.5, 0.5, 0.3, 0.5},
-	visual = "mesh",
-	mesh = "shark.b3d",
-	textures = {"shark3tex.png"},
-	visual_size = {x = 1.5, y = 1.5},
-	static_save = true,
-	makes_footstep_sound = true,
-	on_step = mobkit.stepfunc,	-- required
-	on_activate = mobkit.actfunc,		-- required
-	get_staticdata = mobkit.statfunc,
-											-- api props
-	springiness=0,
-	buoyancy = 0.98,					-- portion of hitbox submerged
-	max_speed = 5,
-	jump_height = 1.26,
-	view_range = 24,
---	lung_capacity = 0, 		-- seconds
-	max_hp = 20,
-	timeout=600,
-	attack={range=0.8,damage_groups={fleshy=7}},
-	sounds = {
-		attack='sharkattack',
-		},
-	animation = {
-		def={range={x=1,y=59},speed=40,loop=true},	
-		fast={range={x=1,y=59},speed=80,loop=true},
-		back={range={x=15,y=1},speed=-15,loop=false},
-		},
-	
-	brainfunc = shark_brain,
-	
-	on_punch=function(self, puncher, time_from_last_punch, tool_capabilities, dir)
-		if mobkit.is_alive(self) then
-			local hvel = vector.multiply(vector.normalize({x=dir.x,y=0,z=dir.z}),4)
-			self.object:set_velocity({x=hvel.x,y=2,z=hvel.z})
-			
-			mobkit.hurt(self,tool_capabilities.damage_groups.fleshy or 1)
-
-			if type(puncher)=='userdata' and puncher:is_player() then	-- if hit by a player
-				mobkit.clear_queue_high(self)							-- abandon whatever they've been doing
-				mobkit.hq_aqua_attack(self,20,puncher,6)				-- get revenge
-			end
-		end
-	end,
-})
-
---[[
-minetest.register_on_chat_message(
-	function(name, message)
-		if message == 'doit' then
-			minetest.chat_send_all(dump(minetest.registered_aliases.mapgen_water_source))
-		end
-	end
-)	--]]
