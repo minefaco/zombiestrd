@@ -199,7 +199,11 @@ local function alert(pos)
 		if not obj:is_player() then
 			local luaent = obj:get_luaentity()
 			if luaent and luaent.name == 'zombiestrd:zombie' then
-				hq_attracted(luaent,10,pos)
+				local poss = mobkit.get_stand_pos(luaent)
+				if water_life.find_path(poss, pos, luaent, luaent.dtime) then
+				
+					water_life.hq_findpath(luaent,10,pos,3)
+				end
 			end
 		end
 	end
@@ -247,21 +251,14 @@ local function zombie_brain(self)
 			local plyr=mobkit.get_nearby_player(self)
 			if plyr then
 				local pos2 = plyr:get_pos()
-				if prty < 10 then	-- zombie not alert
-					if vector.distance(pos,pos2) < self.view_range/3 and											
-					(not mobkit.is_there_yet2d(pos,minetest.yaw_to_dir(self.object:get_yaw()),pos2) or 
-					vector.length(plyr:get_player_velocity()) > 3) then
-						mobkit.make_sound(self,'misc')
-						mobkit.hq_hunt(self,20,plyr)
+				
+					if vector.distance(pos,pos2) < self.view_range and water_life.find_path(pos, pos2, self, self.dtime) then
+						--mobkit.make_sound(self,'misc')
+						water_life.hq_findpath(self,21,pos2, 3)
+						mobkit.hq_attack(self,20,plyr)
 						if random()<=0.5 then alert(pos) end
 					end
-				else
-					if vector.distance(pos,pos2) < self.view_range then
-						mobkit.make_sound(self,'misc')
-						mobkit.hq_hunt(self,20,plyr)
-						if random()<=0.5 then alert(pos) end
-					end
-				end
+				
 			end
 		end
 		
@@ -344,8 +341,8 @@ minetest.register_entity("zombiestrd:zombie",{
 											-- common props
 	physical = true,
 	stepheight = 0.1,			
-	collide_with_objects = true,
-	collisionbox = {-0.25, -1, -0.25, 0.25, 0.75, 0.25},
+	collide_with_objects = false,
+	collisionbox = {-0.2, -1, -0.2, 0.2, 0.75, 0.2},
 	visual = "mesh",
 	mesh = "zombie_normal.b3d",
 	textures = {"mobs_zombie.png","mobs_zombi2.png"},
@@ -359,7 +356,7 @@ minetest.register_entity("zombiestrd:zombie",{
 	springiness=0,
 	buoyancy = 0.75,					-- portion of hitbox submerged
 	max_speed = 3,
-	jump_height = 1.26,
+	jump_height = 1.5,
 	view_range = 24,
 	lung_capacity = 10, 		-- seconds
 	max_hp = 14,
@@ -411,7 +408,8 @@ minetest.register_entity("zombiestrd:zombie",{
 						if random()<=0.3 then alert(pp) end
 						if mobkit.get_queue_priority(self) < 10 then
 							mobkit.make_sound(self,'misc')
-							mobkit.hq_hunt(self,10,puncher)
+							water_life.hq_findpath(self,11,pp,3)
+							mobkit.hq_attack(self,10,puncher)
 						end
 					end
 					-- kickback
@@ -419,7 +417,28 @@ minetest.register_entity("zombiestrd:zombie",{
 					self.object:set_velocity({x=hvel.x,y=max(hvel.y,1),z=hvel.z})
 				end
 			else
-				local hvel = vector.multiply(vector.normalize({x=dir.x,y=0,z=dir.z}),4)
+				local ent = puncher:get_luaentity()
+                    local hvel = vector.multiply(vector.normalize({x=dir.x,y=0,z=dir.z}),4)                          
+				if ent and string.match(ent.name,"arrow") then
+						local apos = puncher:get_pos()
+						local hpos = mobkit.get_stand_pos(self)
+						hpos.y = hpos.y+1.75
+						local dist = vector.distance(apos,hpos)
+						local name = ent.shooter_name
+						hvel = vector.multiply(vector.normalize(puncher:get_velocity()),10)
+						if dist < 0.7 then
+							mobkit.make_sound(self,'headhit')
+							self.hp=0
+							if zombiestrd.score[name] then 
+								zombiestrd.score[name] = zombiestrd.score[name] +1
+							else
+								zombiestrd.score[name] = 1
+							end
+							savelist()
+						else
+							mobkit.make_sound(self,'bodyhit')
+						end
+				end
 				self.object:set_velocity({x=hvel.x,y=2,z=hvel.z})
 			end
 
