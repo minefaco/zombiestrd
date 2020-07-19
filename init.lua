@@ -160,24 +160,6 @@ local function get_head(luaent)
 	return pos, off
 end
 
--- custom behaviour
--- makes them move in stimulus' general direction for limited time
-local function hq_attracted(self,prty,tpos)
-	local timer = time() + random(10,20)	-- zombie's attention span
-	local func = function(self)
-		if time() > timer then return true end
-		if mobkit.is_queue_empty_low(self) and self.isonground then
-			local pos = mobkit.get_stand_pos(self)
-			if vector.distance(pos,tpos) > 3 then
-				mobkit.goto_next_waypoint(self,tpos)
-			else
-				return true
-			end
-		end
-	end
-	mobkit.queue_high(self,func,prty)
-end
-
 -- override built in behavior to increase idling time
 
 function zombiestrd.hq_roam(self,prty)
@@ -202,7 +184,7 @@ local function alert(pos)
 				local poss = mobkit.get_stand_pos(luaent)
 				if water_life.find_path(poss, pos, luaent, luaent.dtime) then
 				
-					water_life.hq_findpath(luaent,10,pos,3)
+					water_life.hq_findpath(luaent,20,pos,2)
 				end
 			end
 		end
@@ -251,13 +233,24 @@ local function zombie_brain(self)
 			local plyr=mobkit.get_nearby_player(self)
 			if plyr then
 				local pos2 = plyr:get_pos()
-				
+				if prty < 10 then	-- zombie not alert
+					if (vector.distance(pos,pos2) < self.view_range and											
+					(not mobkit.is_there_yet2d(pos,minetest.yaw_to_dir(self.object:get_yaw()),pos2) or 
+					vector.length(plyr:get_player_velocity()) > 3)) and 
+					water_life.find_path(pos, pos2, self, self.dtime) then
+						mobkit.make_sound(self,'misc')
+						water_life.hq_findpath(self,21,pos2, 2)
+						water_life.hq_path_attack(self,20,plyr)
+						--if random()<=0.5 then alert(pos) end
+					end
+				else
 					if vector.distance(pos,pos2) < self.view_range and water_life.find_path(pos, pos2, self, self.dtime) then
 						--mobkit.make_sound(self,'misc')
-						water_life.hq_findpath(self,21,pos2, 3)
-						mobkit.hq_attack(self,20,plyr)
-						if random()<=0.5 then alert(pos) end
+						water_life.hq_findpath(self,21,pos2, 2)
+						water_life.hq_path_attack(self,20,plyr)
+						--if random()<=0.5 then alert(pos) end
 					end
+				end
 				
 			end
 		end
@@ -340,7 +333,7 @@ minetest.register_on_punchnode(
 minetest.register_entity("zombiestrd:zombie",{
 											-- common props
 	physical = true,
-	stepheight = 0.1,			
+	stepheight = 0.5,			
 	collide_with_objects = false,
 	collisionbox = {-0.2, -1, -0.2, 0.2, 0.75, 0.2},
 	visual = "mesh",
@@ -408,8 +401,8 @@ minetest.register_entity("zombiestrd:zombie",{
 						if random()<=0.3 then alert(pp) end
 						if mobkit.get_queue_priority(self) < 10 then
 							mobkit.make_sound(self,'misc')
-							water_life.hq_findpath(self,11,pp,3)
-							mobkit.hq_attack(self,10,puncher)
+							water_life.hq_findpath(self,21,pp,2)
+							water_life.hq_path_attack(self,20,puncher)
 						end
 					end
 					-- kickback
