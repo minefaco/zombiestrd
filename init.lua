@@ -18,7 +18,8 @@ local sign = math.sign
 
 local time = os.time
 
-local spawn_rate = 1 - max(min(minetest.settings:get('zombiestrd_spawn_chance') or 0.6,1),0)
+local zombiestrd_spawn_chance = 1 --0.6
+local spawn_rate = 1 - max(min(minetest.settings:get('zombiestrd_spawn_chance') or zombiestrd_spawn_chance,1),0)
 local spawn_reduction = minetest.settings:get('zombiestrd_spawn_reduction') or 0.4
 
 local function dot(v1,v2)
@@ -187,7 +188,8 @@ local function spawnstep(dtime)
 				yaw = random()*pi*2 - pi
 			end
 			local pos = plyr:get_pos()
-			local dir = vector.multiply(minetest.yaw_to_dir(yaw),abr*16)
+            local distance_multiplier = 2 --16
+			local dir = vector.multiply(minetest.yaw_to_dir(yaw),abr*distance_multiplier)
 			local pos2 = vector.add(pos,dir)
 			pos2.y=pos2.y-5
 			local height, liquidflag = mobkit.get_terrain_height(pos2,32)
@@ -195,11 +197,12 @@ local function spawnstep(dtime)
 			if height and --height >= 0 and
 			mobkit.nodeatpos({x=pos2.x,y=height-0.01,z=pos2.z}).is_ground_content then
 
-				local objs = minetest.get_objects_inside_radius(pos,abr*16+5)
+				local objs = minetest.get_objects_inside_radius(pos,abr*distance_multiplier+5)
 				local wcnt=0
 				local dcnt=0
 				local mobname = 'zombiestrd:zombie'
 				if liquidflag then		-- sharks
+                    --[[
 					local spnode = mobkit.nodeatpos({x=pos2.x,y=height+0.01,z=pos2.z})
 					local spnode2 = mobkit.nodeatpos({x=pos2.x,y=height+1.01,z=pos2.z}) -- node above to make sure won't spawn in shallows
 					nodename_water = nodename_water or minetest.registered_aliases.mapgen_water_source
@@ -214,7 +217,8 @@ local function spawnstep(dtime)
 					else
 						return
 					end
-					
+					]]--
+                    return
 				elseif height >= 0 then		--zombies
 					for _,obj in ipairs(objs) do				-- count mobs in abrange
 						if not obj:is_player() then
@@ -225,14 +229,23 @@ local function spawnstep(dtime)
 						end
 					end
 				end
-				if chance < random() then
-					pos2.y = height+1.01
-					objs = minetest.get_objects_inside_radius(pos2,abr*16-2)
-					for _,obj in ipairs(objs) do				-- do not spawn if another player around
-						if obj:is_player() then return end
-					end
-					local obj=minetest.add_entity(pos2,mobname)			-- ok spawn it already damnit
-				end
+                if areas then
+                    for id, area in pairs(areas:getAreasAtPos(pos2)) do
+                        --minetest.chat_send_all(dump(area.name))
+                        if area.name == "cemetery" or area.name == "Cemetery" or area.name == "zbd" then
+				            if chance < random() then
+					            pos2.y = height+1.01
+					            objs = minetest.get_objects_inside_radius(pos2,abr*distance_multiplier-2)
+					            --[[for _,obj in ipairs(objs) do				-- do not spawn if another player around
+						            if obj:is_player() then return end
+					            end]]--
+					            local obj=minetest.add_entity(pos2,mobname)			-- ok spawn it already damnit
+				            end
+                        end
+
+                    end --end for
+                end
+
 			end
 		end
 	end
@@ -334,7 +347,7 @@ minetest.register_entity("zombiestrd:zombie",{
 
 })
 
-minetest.register_entity("zombiestrd:shark",{
+--[[minetest.register_entity("zombiestrd:shark",{
 											-- common props
 	physical = true,
 	stepheight = 0.1,				--EVIL!
@@ -383,7 +396,7 @@ minetest.register_entity("zombiestrd:shark",{
 			end
 		end
 	end,
-})
+})]]--
 
 --[[
 minetest.register_on_chat_message(
