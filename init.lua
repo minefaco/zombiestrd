@@ -1,3 +1,4 @@
+dofile(minetest.get_modpath("zombiestrd") .. DIR_DELIM .. "scoreboard.lua")
 
 local abr = minetest.get_mapgen_setting('active_block_range')
 local nodename_water = minetest.registered_aliases.mapgen_water_source
@@ -18,7 +19,7 @@ local sign = math.sign
 
 local time = os.time
 
-local zombiestrd_spawn_chance = 0.6 --0.6
+local zombiestrd_spawn_chance = 0.8 --0.6
 local spawn_rate = 1 - max(min(minetest.settings:get('zombiestrd_spawn_chance') or zombiestrd_spawn_chance,1),0)
 local spawn_reduction = minetest.settings:get('zombiestrd_spawn_reduction') or 0.4
 
@@ -356,6 +357,7 @@ minetest.register_entity("zombiestrd:zombie",{
 			
 			-- head seeking
 			if type(puncher)=='userdata' and puncher:is_player() then
+                local name = puncher:get_player_name()
 				local pp = puncher:get_pos()
 				pp.y = pp.y + puncher:get_properties().eye_height	-- pp is now camera pos
 				local pm, radius = get_head(self)
@@ -370,6 +372,15 @@ minetest.register_entity("zombiestrd:zombie",{
 						mobkit.make_sound(self,'headhit')
 --						self.object:set_hp(99)
 						self.hp=0
+                        --PONCTUATION
+                        if zombie_score[name] then
+                            zombie_score[name] = zombie_score[name] + 1
+                            check_prizes(puncher,zombie_score[name] + 1)
+                        else
+                            zombie_score[name] = 1
+                        end
+                        zb_savelist()
+                        --END PONCTUATION
 					else
 						mobkit.make_sound(self,'bodyhit')
 						if random()<=0.3 then alert(pp) end
