@@ -238,7 +238,7 @@ local function spawnstep(dtime)
 			local height, liquidflag = mobkit.get_terrain_height(pos2,32)
 	
             if areas then
-                local areasAtPos = areas:getAreasAtPos(pos2)
+                local areasAtPos = areas:getAreasAtPos(pos)
                 for id, area in pairs(areasAtPos) do
                     --minetest.chat_send_all(dump(area.name))
                     if area.name == "cemetery" or area.name == "Cemetery" or area.name == "zbd" then
