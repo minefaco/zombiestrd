@@ -18,7 +18,7 @@ local sign = math.sign
 
 local time = os.time
 
-local zombiestrd_spawn_chance = 0.8 --0.6
+local zombiestrd_spawn_chance = 0.6 --0.6
 local spawn_rate = 1 - max(min(minetest.settings:get('zombiestrd_spawn_chance') or zombiestrd_spawn_chance,1),0)
 local spawn_reduction = minetest.settings:get('zombiestrd_spawn_reduction') or 0.4
 
@@ -168,10 +168,51 @@ local function shark_brain(self)
 	end
 	if mobkit.is_queue_empty_high(self) then mobkit.hq_aqua_roam(self,10,5) end
 end
+
+minetest.register_node("zombiestrd:display_target", {
+	tiles = {"zombiestrd_target.png"},
+	use_texture_alpha = true,
+	walkable = false,
+	drawtype = "nodebox",
+	node_box = {
+		type = "fixed",
+		fixed = {
+			{-.55,-.55,-.55, .55,.55,.55},
+		},
+	},
+	selection_box = {
+		type = "regular",
+	},
+	paramtype = "light",
+	groups = {dig_immediate = 3, not_in_creative_inventory = 1},
+	drop = "",
+})
+
+minetest.register_entity("zombiestrd:target", {
+	physical = false,
+	collisionbox = {0, 0, 0, 0, 0, 0},
+	visual = "wielditem",
+	-- wielditem seems to be scaled to 1.5 times original node size
+	visual_size = {x = 0.67, y = 0.67},
+	textures = {"zombiestrd:display_target"},
+	timer = 0,
+	glow = 10,
+
+	on_step = function(self, dtime)
+
+		self.timer = self.timer + dtime
+
+		-- remove after set number of seconds
+		if self.timer > 1 then
+			self.object:remove()
+		end
+	end,
+})
+
+
 -- spawning is too specific to be included in the api, this is an example.
 -- a modder will want to refer to specific names according to games/mods they're using 
 -- in order for mobs not to spawn on treetops, certain biomes etc.
-
 local function spawnstep(dtime)
 
 	for _,plyr in ipairs(minetest.get_connected_players()) do
@@ -188,14 +229,17 @@ local function spawnstep(dtime)
 				yaw = random()*pi*2 - pi
 			end
 			local pos = plyr:get_pos()
-            local distance_multiplier = 2 --16
-			local dir = vector.multiply(minetest.yaw_to_dir(yaw),abr*distance_multiplier)
+            local distance_multiplier = 10 --16
+			--local dir = vector.multiply(minetest.yaw_to_dir(yaw),abr*distance_multiplier)
+            local dir = vector.multiply(minetest.yaw_to_dir(yaw),distance_multiplier)
 			local pos2 = vector.add(pos,dir)
+            --minetest.add_entity(pos2, "zombiestrd:target") --debug target
 			pos2.y=pos2.y-5
 			local height, liquidflag = mobkit.get_terrain_height(pos2,32)
 	
             if areas then
-                for id, area in pairs(areas:getAreasAtPos(pos2)) do
+                local areasAtPos = areas:getAreasAtPos(pos2)
+                for id, area in pairs(areasAtPos) do
                     --minetest.chat_send_all(dump(area.name))
                     if area.name == "cemetery" or area.name == "Cemetery" or area.name == "zbd" then
 
