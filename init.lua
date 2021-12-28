@@ -19,7 +19,7 @@ local sign = math.sign
 
 local time = os.time
 
-local zombiestrd_spawn_chance = 1 --0.6
+local zombiestrd_spawn_chance = 0.6
 local spawn_rate = 1 - max(min(minetest.settings:get('zombiestrd_spawn_chance') or zombiestrd_spawn_chance,1),0)
 local spawn_reduction = minetest.settings:get('zombiestrd_spawn_reduction') or 0.4
 
