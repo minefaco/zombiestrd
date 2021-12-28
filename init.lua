@@ -194,59 +194,60 @@ local function spawnstep(dtime)
 			pos2.y=pos2.y-5
 			local height, liquidflag = mobkit.get_terrain_height(pos2,32)
 	
-			if height and --height >= 0 and
-			mobkit.nodeatpos({x=pos2.x,y=height-0.01,z=pos2.z}).is_ground_content then
+            if areas then
+                for id, area in pairs(areas:getAreasAtPos(pos2)) do
+                    --minetest.chat_send_all(dump(area.name))
+                    if area.name == "cemetery" or area.name == "Cemetery" or area.name == "zbd" then
 
-				local objs = minetest.get_objects_inside_radius(pos,abr*distance_multiplier+5)
-				local wcnt=0
-				local dcnt=0
-				local mobname = 'zombiestrd:zombie'
-				if liquidflag then		-- sharks
-                    --[[
-					local spnode = mobkit.nodeatpos({x=pos2.x,y=height+0.01,z=pos2.z})
-					local spnode2 = mobkit.nodeatpos({x=pos2.x,y=height+1.01,z=pos2.z}) -- node above to make sure won't spawn in shallows
-					nodename_water = nodename_water or minetest.registered_aliases.mapgen_water_source
-					if spnode and spnode2 and spnode.name == nodename_water and spnode2.name == nodename_water then
-						for _,obj in ipairs(objs) do
-							if not obj:is_player() then
-								local entity = obj:get_luaentity()
-								if entity and entity.name=='zombiestrd:shark' then return end
-							end
-						end
-					mobname = 'zombiestrd:shark'
-					else
-						return
-					end
-					]]--
-                    return
-				elseif height >= 0 then		--zombies
-					for _,obj in ipairs(objs) do				-- count mobs in abrange
-						if not obj:is_player() then
-							local entity = obj:get_luaentity()
-							if entity and entity.name:find('zombiestrd:') then
-								chance=chance + (1-chance)*spawn_reduction	-- chance reduced for every mob in range
-							end
-						end
-					end
-				end
-                if areas then
-                    for id, area in pairs(areas:getAreasAtPos(pos2)) do
-                        --minetest.chat_send_all(dump(area.name))
-                        if area.name == "cemetery" or area.name == "Cemetery" or area.name == "zbd" then
-				            if chance < random() then
-					            pos2.y = height+1.01
-					            objs = minetest.get_objects_inside_radius(pos2,abr*distance_multiplier-2)
-					            --[[for _,obj in ipairs(objs) do				-- do not spawn if another player around
-						            if obj:is_player() then return end
-					            end]]--
-					            local obj=minetest.add_entity(pos2,mobname)			-- ok spawn it already damnit
+			            --if height and --height >= 0 and
+			            if mobkit.nodeatpos({x=pos2.x,y=height-0.01,z=pos2.z}).is_ground_content then
+
+				            local objs = minetest.get_objects_inside_radius(pos,abr*distance_multiplier+5)
+				            local wcnt=0
+				            local dcnt=0
+				            local mobname = 'zombiestrd:zombie'
+				            if liquidflag then		-- sharks
+                                --[[
+					            local spnode = mobkit.nodeatpos({x=pos2.x,y=height+0.01,z=pos2.z})
+					            local spnode2 = mobkit.nodeatpos({x=pos2.x,y=height+1.01,z=pos2.z}) -- node above to make sure won't spawn in shallows
+					            nodename_water = nodename_water or minetest.registered_aliases.mapgen_water_source
+					            if spnode and spnode2 and spnode.name == nodename_water and spnode2.name == nodename_water then
+						            for _,obj in ipairs(objs) do
+							            if not obj:is_player() then
+								            local entity = obj:get_luaentity()
+								            if entity and entity.name=='zombiestrd:shark' then return end
+							            end
+						            end
+					            mobname = 'zombiestrd:shark'
+					            else
+						            return
+					            end
+					            ]]--
+                                return
+				            elseif height >= 0 then		--zombies
+					            for _,obj in ipairs(objs) do				-- count mobs in abrange
+						            if not obj:is_player() then
+							            local entity = obj:get_luaentity()
+							            if entity and entity.name:find('zombiestrd:') then
+								            chance=chance + (1-chance)*spawn_reduction	-- chance reduced for every mob in range
+							            end
+						            end
+					            end
 				            end
-                        end
+	                        if chance < random() then
+		                        pos2.y = height+1.01
+		                        objs = minetest.get_objects_inside_radius(pos2,abr*distance_multiplier-2)
+		                        --[[for _,obj in ipairs(objs) do				-- do not spawn if another player around
+			                        if obj:is_player() then return end
+		                        end]]--
+		                        local obj=minetest.add_entity(pos2,mobname)			-- ok spawn it already damnit
+	                        end
+			            end
 
-                    end --end for
-                end
+                    end
 
-			end
+                end --end for
+            end -- end areas
 		end
 	end
 end
