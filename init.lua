@@ -244,7 +244,7 @@ local function spawnstep(dtime)
                     --minetest.chat_send_all(dump(area.name))
                     if area.name == "cemetery" or area.name == "Cemetery" or area.name == "zbd" then
 
-			            --if height and --height >= 0 and
+			            --if height and height >= 0 and
 			            if mobkit.nodeatpos({x=pos2.x,y=height-0.01,z=pos2.z}).is_ground_content then
 
 				            local objs = minetest.get_objects_inside_radius(pos,abr*distance_multiplier+5)

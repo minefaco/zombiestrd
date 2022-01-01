@@ -2,8 +2,9 @@ local storage = minetest.get_mod_storage()
 zombie_score = {}
 
 local prizes = {
+		  {500, "default:mese", 1, "mese block"},
 		  {1000, "default:diamondblock", 1, "diamond block"},
-		  {2000, "default:diamondblock", 2, "diamond block"},
+          {1500, "default:diamondblock", 2, "diamond block"},
 }
 
 -- load scoreboard
