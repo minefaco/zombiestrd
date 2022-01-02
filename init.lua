@@ -375,7 +375,7 @@ local function spawnstep(dtime)
                 local spawned = spawn_monsters(pos, yaw, chance, distance_multiplier, 'zombiestrd:zombie', zb_area)
 
                 if spawned == false then
-                    chance = spawn_rate * 1.4
+                    chance = spawn_rate * 1.3
                     local ghost_area = {"cemetery","Cemetery","monsters","gtd"}
                     spawned = spawn_monsters(pos, yaw, chance, distance_multiplier, 'zombiestrd:ghost', ghost_area)
                 end
@@ -509,7 +509,7 @@ minetest.register_entity("zombiestrd:ghost",{
 											-- api props
 	springiness=0,
 	buoyancy = 0.75,					-- portion of hitbox submerged
-	max_speed = 4,
+	max_speed = 5,
 	jump_height = 3,
 	view_range = 30,
 	lung_capacity = 200, 		-- seconds
