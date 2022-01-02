@@ -253,6 +253,7 @@ local function spawnstep(dtime)
                     --minetest.add_entity(pos2, "zombiestrd:target") --debug target
 			        pos2.y=pos2.y-5
 			        local height, liquidflag = mobkit.get_terrain_height(pos2,32)
+                    if height == nil then height = 0 end
                     local position_at_terrain_height = {x=pos2.x,y=height-0.01,z=pos2.z}
 
                     --force the spawn area be inside the area
@@ -387,7 +388,7 @@ minetest.register_entity("zombiestrd:zombie",{
                         --PONCTUATION
                         if zombie_score[name] then
                             zombie_score[name] = zombie_score[name] + 1
-                            check_prizes(puncher,zombie_score[name] + 1)
+                            check_prizes(puncher)
                         else
                             zombie_score[name] = 1
                         end

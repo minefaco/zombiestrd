@@ -2,9 +2,14 @@ local storage = minetest.get_mod_storage()
 zombie_score = {}
 
 local prizes = {
-		  {500, "default:mese", 1, "mese block"},
-		  {1000, "default:diamondblock", 1, "diamond block"},
-          {1500, "default:diamondblock", 2, "diamond block"},
+            {250, "binoculars:binoculars", 1, "binoculars"},
+            {500, "default:mese_crystal", 5, "mese crystal"},
+            {750, "default:mese", 1, "mese block"},
+            {1000, "default:steel_ingot", 18, "steel ingot"},
+            {1250, "default:diamond", 5, "diamond"},
+            {1500, "default:diamondblock", 1, "diamond block"},
+            {1750, "default:diamondblock", 2, "diamond block"},
+            {2000, "default:obsidian", 99, "obsidian"},
 }
 
 -- load scoreboard
@@ -65,19 +70,19 @@ local function sortscore()
     return fname
 end
 
-function check_prizes(user,number)
+function check_prizes(user)
       local name = user:get_player_name()
       local inv = user:get_inventory()
       for i in ipairs(prizes) do
          local goal = prizes[i][1]
-	 local nodename = prizes[i][2]
-	 local howmuch = prizes[i][3]
-	 local sayit = prizes[i][4]
+	     local nodename = prizes[i][2]
+	     local howmuch = prizes[i][3]
+	     local sayit = prizes[i][4]
 	 
-	    if zombie_score[name] + number == goal then
-		  minetest.chat_send_player(name, core.colorize("#FF6700", "Congratulation: You killed your "..goal.."s zombies !! Keep up the good work. "..howmuch.." "..sayit.." have been added to your inv"))
-		  inv:add_item("main", {name=nodename, count=howmuch})
-	    end
+        if zombie_score[name] == goal then
+            minetest.chat_send_player(name, core.colorize("#FF6700", "Congratulation: You killed your "..goal.."s zombies !! Keep up the good work. "..howmuch.." "..sayit.." have been added to your inv"))
+            inv:add_item("main", {name=nodename, count=howmuch})
+        end
       end
 end
 
