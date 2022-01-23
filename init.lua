@@ -400,6 +400,20 @@ minetest.register_on_punchnode(
 	end
 )
 
+local function add_score(name, points, table, prize_index, player)
+    local key = name
+    if tonumber(key) ~= nil then
+        key = "_"..key.."_"
+    end
+    if table[key] then
+        table[key] = table[key] + points
+        check_prizes(player, table[key], prize_index)
+    else
+        table[key] = points
+    end
+    savelist()
+end
+
 minetest.register_entity("zombiestrd:zombie",{
 											-- common props
 	physical = true,
@@ -461,15 +475,7 @@ minetest.register_entity("zombiestrd:zombie",{
 --						self.object:set_hp(99)
 						self.hp=0
                         --PONCTUATION
-                        if tonumber(name) == nil then
-                            if zombie_score[name] then
-                                zombie_score[name] = zombie_score[name] + 1
-                                check_prizes(puncher, zombie_score[name], "zombie")
-                            else
-                                zombie_score[name] = 1
-                            end
-                            savelist()
-                        end
+                        add_score(name, 1, zombie_score, "zombie", puncher)
                         --END PONCTUATION
 					else
 						mobkit.make_sound(self,'bodyhit')
@@ -554,15 +560,7 @@ minetest.register_entity("zombiestrd:ghost",{
 --						self.object:set_hp(99)
 						self.hp=0
                         --PONCTUATION
-                        if tonumber(name) == nil then
-                            if ghost_score[name] then
-                                ghost_score[name] = ghost_score[name] + 1
-                                check_prizes(puncher, ghost_score[name], "ghost")
-                            else
-                                ghost_score[name] = 1
-                            end
-                            savelist()
-                        end
+                        add_score(name, 1, ghost_score, "ghost", puncher)
                         --END PONCTUATION
 					else
 						mobkit.make_sound(self,'bodyhit')
@@ -575,15 +573,7 @@ minetest.register_entity("zombiestrd:ghost",{
 						    end
                             if self.hp<=0 then
                                 --PONCTUATION
-                                if tonumber(name) == nil then
-                                    if ghost_score[name] then
-                                        ghost_score[name] = ghost_score[name] + 1
-                                        check_prizes(puncher, ghost_score[name], "ghost")
-                                    else
-                                        ghost_score[name] = 1
-                                    end
-                                    savelist()
-                                end
+                                add_score(name, 1, ghost_score, "ghost", puncher)
                                 --END PONCTUATION
                             end
                         end
