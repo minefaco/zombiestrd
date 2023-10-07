@@ -23,6 +23,15 @@ local zombiestrd_spawn_chance = 0.6
 local spawn_rate = 1 - max(min(minetest.settings:get('zombiestrd_spawn_chance') or zombiestrd_spawn_chance,1),0)
 local spawn_reduction = minetest.settings:get('zombiestrd_spawn_reduction') or 0.4
 
+local spawn_only_in_area = false
+if minetest.settings:get_bool('zombiestrd.only_in_area') then
+    spawn_only_in_area = true
+end
+local spawn_ghosts = false
+if minetest.settings:get_bool('zombiestrd.spawn_ghosts') then
+    spawn_ghosts = true
+end
+
 local function dot(v1,v2)
 	return v1.x*v2.x+v1.y*v2.y+v1.z*v2.z
 end
@@ -271,7 +280,7 @@ local function locate( table, value )
 end
 
 local function check_is_inside_area(pos, table)
-    if areas then
+    if areas and spawn_only_in_area == true then
         local areasAtPos = areas:getAreasAtPos(pos)
         for id, area in pairs(areasAtPos) do
             --minetest.chat_send_all(dump(area.name))
@@ -279,8 +288,9 @@ local function check_is_inside_area(pos, table)
                 return true
             end
         end
+        return false
     end
-    return false
+    return true
 end
 
 local function spawn_monsters(pos, yaw, chance, distance_multiplier, monster_name, areas)
@@ -323,7 +333,7 @@ local function spawn_monsters(pos, yaw, chance, distance_multiplier, monster_nam
                     end
                     ]]--
                     return false
-                elseif height >= 0 then		--zombies
+                elseif height >= -10 and height <= 120 then		--zombies
                     for _,obj in ipairs(objs) do				-- count mobs in abrange
 	                    if not obj:is_player() then
 		                    local entity = obj:get_luaentity()
@@ -370,17 +380,16 @@ local function spawnstep(dtime)
 			local pos = plyr:get_pos()
             local distance_multiplier = 10 --16
 			--local dir = vector.multiply(minetest.yaw_to_dir(yaw),abr*distance_multiplier)
-            if areas then
-                local zb_area = {"cemetery","Cemetery","monsters","zbd"}
-                local spawned = spawn_monsters(pos, yaw, chance, distance_multiplier, 'zombiestrd:zombie', zb_area)
 
-                if spawned == false then
-                    chance = spawn_rate * 1.3
-                    local ghost_area = {"cemetery","Cemetery","monsters","gtd"}
-                    spawned = spawn_monsters(pos, yaw, chance, distance_multiplier, 'zombiestrd:ghost', ghost_area)
-                end
+            local zb_area = {"cemetery","Cemetery","monsters","zbd"}
+            local spawned = spawn_monsters(pos, yaw, chance, distance_multiplier, 'zombiestrd:zombie', zb_area)
 
-            end -- end areas
+            if spawned == false and spawn_ghosts == true then
+                chance = spawn_rate * 1.3
+                local ghost_area = {"cemetery","Cemetery","monsters","gtd"}
+                spawned = spawn_monsters(pos, yaw, chance, distance_multiplier, 'zombiestrd:ghost', ghost_area)
+            end
+
 		end
 	end
 end
@@ -401,10 +410,7 @@ minetest.register_on_punchnode(
 )
 
 local function add_score(name, points, table, prize_index, player)
-    local key = name
-    if tonumber(key) ~= nil then
-        key = "_"..key.."_"
-    end
+    local key = "plyr_"..name
     if table[key] then
         table[key] = table[key] + points
         check_prizes(player, table[key], prize_index)
