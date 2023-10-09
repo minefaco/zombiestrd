@@ -26,6 +26,23 @@ local spawn_reduction = minetest.settings:get('zombiestrd_spawn_reduction') or 0
 local spawn_only_in_area = false
 if minetest.settings:get_bool('zombiestrd.only_in_area') then
     spawn_only_in_area = true
+
+    minetest.register_chatcommand("zombies_armageddon", {
+	    params = "<true/false>",
+	    description = "Set enable/disable zombies spawning everywhere.",
+	    privs = {server = true},
+        func = function(name, param)
+            local command = param
+
+            if command == "false" then
+                spawn_only_in_area = true
+                minetest.chat_send_player(name, ">>> Armageddon is disabled")
+            else
+                spawn_only_in_area = false
+                minetest.chat_send_player(name, ">>> Armageddon is enabled")
+            end
+        end,
+    })
 end
 local spawn_ghosts = false
 if minetest.settings:get_bool('zombiestrd.spawn_ghosts') then
@@ -299,6 +316,7 @@ local function spawn_monsters(pos, yaw, chance, distance_multiplier, monster_nam
 
         local dir = vector.multiply(minetest.yaw_to_dir(yaw),distance_multiplier)
         local pos2 = vector.add(pos,dir)
+        if pos2 == nil then return end
         --minetest.add_entity(pos2, "zombiestrd:target") --debug target
         pos2.y=pos2.y-5
         local height, liquidflag = mobkit.get_terrain_height(pos2,32)
