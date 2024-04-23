@@ -56,7 +56,15 @@ function serializeTable(val, name, skipnewlines, depth)
 
     local tmp = string.rep(" ", depth)
 
-    if name then tmp = tmp .. name .. " = " end
+    if name then
+        --check the prefix before
+        --if a user uses only numbers in its name, it will avoid table break
+        local prefix = "plyr_"
+        if string.sub(name, 1, 5) == "plyr_" then
+            prefix = ""
+        end
+        tmp = tmp .. prefix .. name .. " = "
+    end
 
     if type(val) == "table" then
         tmp = tmp .. "{" .. (not skipnewlines and "\n" or "")
@@ -108,14 +116,20 @@ local function sortscore(score_table)
     local fname = "size[5,6]"
     local count = 1
 
-      for k,v in spairs(score_table, function(t,a,b) return t[b] < t[a] end) do
-	  --minetest.chat_send_all(count.." >>> "..k.." , "..v)
-	  fname = fname.."label[1,"..(count*0.3)..";"..count.." >>> "..k.." , "..v.."]"
-	  count = count + 1
-	  if count > 10 then break end
-      end
+        local field = "textarea[0.5,0.5;4.5,5.5;score;Scores;"
+        for k,v in spairs(score_table, function(t,a,b) return t[b] < t[a] end) do
+            --minetest.chat_send_all(count.." >>> "..k.." , "..v)
+            local name = k
+            if string.sub(name, 1, 5) == "plyr_" then
+                name = string.sub(name,6)
+            end
+            field = field..name.." >>> "..string.format("%s\n", tostring(v))
+            --count = count + 1
+            --if count > 10 then break end
+        end
+        field = field .. "]";
   
-    fname = fname.."button_exit[1.5,5;2,1;quit;Exit]"
+    fname = fname..field.."button_exit[1.5,5.3;2,1;quit;Exit]"
     return fname
 end
 
