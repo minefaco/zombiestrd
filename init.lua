@@ -327,7 +327,9 @@ local function spawn_monsters(pos, yaw, chance, distance_multiplier, monster_nam
         local is_zombie_spawn_area = check_is_inside_area(position_at_terrain_height, areas)
         if is_zombie_spawn_area then
             --if height and height >= 0 and
-            if mobkit.nodeatpos(position_at_terrain_height).is_ground_content then
+            local node_at_pos = mobkit.nodeatpos(position_at_terrain_height)
+            if not node_at_pos then return end
+            if node_at_pos.is_ground_content then
 
                 local objs = minetest.get_objects_inside_radius(pos,abr*distance_multiplier+5)
                 local wcnt=0
